@@ -6,7 +6,8 @@ Python3.12と諸々のライブラリを用いて、画像ファイル群を1つ
 以下の環境にて動作確認済み。
 |Windows       |MacOS (OSX)        |Linux|
 |:------------:|:-----------------:|:---:|
-|Windows10     |MacOS High Sierra  |     |
+|Windows10     |MacOS Catalina     |     |
+|              |MacOS High Sierra  |     |
 
 ## その他  
 メモリをかなり消費するので、フリーのメモリが4GB以上あるときに実行すると安定します。
