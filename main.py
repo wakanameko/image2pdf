@@ -1,6 +1,7 @@
 # coding: utf-8
 import os
 import platform
+import threading
 import customtkinter as ctk
 import PIL
 
@@ -31,7 +32,7 @@ def openSettingFile():
 def writeSettingFile(mode="default"):
     if mode == "default":
         with open(path_setting_ini, "w", encoding="UTF-8") as file_setting:
-            file_setting.write("410\n310\nsystem\nblue\njapanese\n\n\n")
+            file_setting.write("410\n340\nsystem\nblue\njapanese\n\n\n")
         print("setting.ini を初期化しました。")
     if mode == "save":
         with open(path_setting_ini, "w", encoding="UTF-8") as file_setting:
@@ -44,15 +45,24 @@ def writeSettingFile(mode="default"):
 
 def choose_dir_img():
     global history_dir_img
-    open_dir_img = ctk.filedialog.askdirectory(title="PDF形式に変換する画像が入ったフォルダを選択してください。", initialdir=currentDir)
+    if history_dir_img:
+        initial_dir_img = history_dir_img
+    else:
+        initial_dir_img = currentDir
+    open_dir_img = ctk.filedialog.askdirectory(title="PDF形式に変換する画像が入ったフォルダを選択してください。", initialdir=initial_dir_img)
     if open_dir_img:
         textbox_dir_img_input.delete(0, ctk.END)
         textbox_dir_img_input.insert(0, open_dir_img)
         writeSettingFile(mode="save")
 
 def choose_path_pdf():
+    global history_path_pdf
+    if history_path_pdf:
+        initial_path_pdf = os.path.dirname(history_path_pdf)
+    else:
+        initial_path_pdf = currentDir
     array_filetypes = [("PDFファイル", ".pdf"), ("その他のフォーマット", ".*") ]
-    save_path_pdf = ctk.filedialog.asksaveasfilename(title="PDFファイルの保存先を指定してください。", initialdir=currentDir, filetypes=array_filetypes, defaultextension=".pdf")
+    save_path_pdf = ctk.filedialog.asksaveasfilename(title="PDFファイルの保存先を指定してください。", initialdir=initial_path_pdf, filetypes=array_filetypes, defaultextension=".pdf")
     if save_path_pdf:
         textbox_path_pdf_input.delete(0, ctk.END)
         textbox_path_pdf_input.insert(0, save_path_pdf)
@@ -73,8 +83,10 @@ def run_image_pdf():
         print(path_images, j)
         with PIL.Image.open(path_images) as convert_image:
             image_objs.append(convert_image.convert('RGB'))
-        print("successfully converting {} files!".format(j+1))
-    image_objs[0].save(history_path_pdf, "PDF" ,resolution=100.0, save_all=True, append_images=image_objs[1:])
+        print("successfully converting {} files / {} files!".format(j+1, len(array_file_image)))
+        progressbar.set((j + 1) / len(array_file_image))
+        app.update_idletasks()
+    image_objs[0].save(history_path_pdf, "PDF", resolution=100.0, save_all=True, append_images=image_objs[1:])
 
 def quit_thisAPP():
     writeSettingFile(mode="save")
@@ -84,7 +96,7 @@ def quit_thisAPP():
 ##########
 # initialize
 APPNAME = "image2pdf"
-VERSION = 1.0
+VERSION = 1.1
 DEVELOPER = "wakanameko"
 currentDir = os.path.dirname(__file__)
 env_OS = platform.system()
@@ -142,6 +154,9 @@ separator2.pack(fill="x", pady=(5, 10))
 # section3
 button_convert_img_pdf = ctk.CTkButton(master=frame_main, text="実行", command=lambda:run_image_pdf())
 button_convert_img_pdf.pack(pady=(5, 2))
+progressbar = ctk.CTkProgressBar(master=frame_main, width=200, height=8)
+progressbar.pack(padx=(15, 15), pady=(17, 7), fill="x", expand=True)
+progressbar.set(0)
 
 
 # ウィンドウが消されたときの処理
