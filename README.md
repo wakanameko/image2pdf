@@ -7,7 +7,7 @@ Python3.12と諸々のライブラリを用いて、画像ファイル群を1つ
 |Windows       |MacOS (OSX)        |Linux|
 |:------------:|:-----------------:|:---:|
 |Windows10     |MacOS Catalina     |     |
-|              |MacOS High Sierra  |     |　　
+|Windows7      |MacOS High Sierra  |     |　　
 
 100枚程度のpng画像からの変換を動作確認として行いました。  
 
