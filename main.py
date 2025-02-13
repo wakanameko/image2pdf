@@ -8,7 +8,7 @@ import PIL
 ##########
 # functions
 def openSettingFile():
-    try:    
+    try:
         with open(path_setting_ini, "r", encoding="UTF-8") as file_setting:
             global settings, size_window_x, size_window_y, appearance, theme, language, history_dir_img, history_path_pdf, history_format_img
             settings = file_setting.read().splitlines()
@@ -33,7 +33,7 @@ def openSettingFile():
 def writeSettingFile(mode="default"):
     if mode == "default":
         with open(path_setting_ini, "w", encoding="UTF-8") as file_setting:
-            file_setting.write("580\n370\nsystem\nblue\njapanese\n\n\n\n")
+            file_setting.write("580\n370\nsystem\nblue\nJapanese\n\n\n\n")
         print("setting.ini を初期化しました。")
     if mode == "save":
         with open(path_setting_ini, "w", encoding="UTF-8") as file_setting:
@@ -45,13 +45,48 @@ def writeSettingFile(mode="default"):
             history_format_img = combo_format.get()
             file_setting.write(f"{size_window_x}\n{size_window_y}\n{appearance}\n{theme}\n{language}\n{history_dir_img}\n{history_path_pdf}\n{history_format_img}\n")
 
+def open_language_file(lang="Japanese"):
+    try:
+        with open("{}{}.txt".format(path_dir_translation, lang), "r", encoding="UTF-8") as file_language:
+            global info_files_converting, success_files_convert, error_image_not_found, error_file_dest_not_found, popup_title_choose_dir_img, popup_title_save_path_pdf
+            translations = file_language.read().splitlines()
+            print(translations)
+
+            # GUI section 2
+            label_dir_img.configure(text=translations[0])
+            label_img_format.configure(text=translations[1])
+            button_dir_img_open.configure(text=translations[2])
+            textbox_dir_img_input.configure(placeholder_text=translations[3])
+            label_path_pdf.configure(text=translations[4])
+            button_path_pdf_open.configure(text=translations[5])
+            textbox_path_pdf_input.configure(placeholder_text=translations[6])
+            # GUI section 3
+            button_convert_img_pdf.configure(text=translations[7])
+            # infomation messages
+            info_files_converting = translations[8]
+            # success messages
+            success_files_convert = translations[9]
+            # error messages
+            error_image_not_found = translations[10]
+            error_file_dest_not_found = translations[11]
+            # popup window
+            popup_title_choose_dir_img = translations[12]
+            popup_title_save_path_pdf = translations[13]
+    except FileNotFoundError:
+        print("言語ファイル「{}{}.txt」が見つかりません。".format(path_dir_translation, lang))
+        open_language_file()
+    except UnicodeDecodeError:
+        print("言語ファイル「{}{}.txt」が読み込めません。".format(path_dir_translation, lang))
+        open_language_file()
+
+
 def choose_dir_img():
     global history_dir_img
     if history_dir_img:
         initial_dir_img = history_dir_img
     else:
         initial_dir_img = currentDir
-    open_dir_img = ctk.filedialog.askdirectory(title="PDF形式に変換する画像が入ったフォルダを選択してください。", initialdir=initial_dir_img)
+    open_dir_img = ctk.filedialog.askdirectory(title=popup_title_choose_dir_img, initialdir=initial_dir_img)
     if open_dir_img:
         textbox_dir_img_input.delete(0, ctk.END)
         textbox_dir_img_input.insert(0, open_dir_img)
@@ -64,7 +99,7 @@ def choose_path_pdf():
     else:
         initial_path_pdf = currentDir
     array_filetypes = [("PDFファイル", ".pdf"), ("その他のフォーマット", ".*") ]
-    save_path_pdf = ctk.filedialog.asksaveasfilename(title="PDFファイルの保存先を指定してください。", initialdir=initial_path_pdf, filetypes=array_filetypes, defaultextension=".pdf")
+    save_path_pdf = ctk.filedialog.asksaveasfilename(title=popup_title_save_path_pdf, initialdir=initial_path_pdf, filetypes=array_filetypes, defaultextension=".pdf")
     if save_path_pdf:
         textbox_path_pdf_input.delete(0, ctk.END)
         textbox_path_pdf_input.insert(0, save_path_pdf)
@@ -78,11 +113,11 @@ def run_image_pdf():
         if not array_file_image:
             raise FileNotFoundError
     except FileNotFoundError:
-        label_convert_status.configure(text="[エラー] : 画像が見つかりませんでした。", text_color="red")
+        label_convert_status.configure(text=error_image_not_found, text_color="red")
         return
 
     if not history_path_pdf:
-        label_convert_status.configure(text="[エラー] : PDFファイルの保存先が指定されていません。", text_color="red")
+        label_convert_status.configure(text=error_file_dest_not_found, text_color="red")
         return
     
     image_objs = []
@@ -91,29 +126,31 @@ def run_image_pdf():
         with PIL.Image.open(path_images) as convert_image:
             image_objs.append(convert_image.convert('RGB'))
         progressbar.set((j + 1) / len(array_file_image))
-        label_convert_status.configure(text="[情報] : 変換中... {} 枚 / {} 枚".format(j+1, len(array_file_image)), text_color=("blue", "cyan"))
+        label_convert_status.configure(text=info_files_converting.format(j+1, len(array_file_image)), text_color=("blue", "cyan"))  # タプルで色指定したら(Light, Dark)で適用されるらしい
         app.update_idletasks()
     image_objs[0].save(history_path_pdf, "PDF", resolution=100.0, save_all=True, append_images=image_objs[1:])
 
-    label_convert_status.configure(text="[成功] : 処理が正常に完了しました。", text_color="green")
+    label_convert_status.configure(text=success_files_convert, text_color="green")
 
 def quit_thisAPP(event=None):
     writeSettingFile(mode="save")
-    app.destroy
+    app.destroy()
     quit()
 
 ##########
 # initialize
 APPNAME = "image2pdf"
-VERSION = 1.2
+VERSION = 1.3
 DEVELOPER = "wakanameko"
 currentDir = os.path.dirname(__file__)
 env_OS = platform.system()
 if env_OS == "Darwin":
     path_setting_ini = "{}/setting.ini".format(currentDir)
+    path_dir_translation = "{}/translation/".format(currentDir)
     name_filer = "Finder"
 elif env_OS == "win32" or "Windows":
     path_setting_ini = "{}\\setting.ini".format(currentDir)
+    path_dir_translation = "{}\\translation\\".format(currentDir)
     name_filer = "Explorer"
 print("####################\n" + APPNAME, "version:", VERSION, "by", DEVELOPER, "\nOS:", env_OS,"\n####################")
 try:
@@ -148,34 +185,42 @@ label_appname.pack(pady=(0, 5))
 separator1 = ctk.CTkFrame(master=frame_main, height=2, fg_color="gray")
 separator1.pack(fill="x", pady=(5, 10))
 # section2
-label_dir_img = ctk.CTkLabel(master=frame_main, text="PDFにする画像フォルダ", font=("system-ui", 14, "bold"))
+label_dir_img = ctk.CTkLabel(master=frame_main, text="", font=("system-ui", 14, "bold"))
 label_dir_img.pack(pady=(5, 0))
-combo_format = ctk.CTkComboBox(master=frame_main, font=("system-ui", 14, "normal"), values=["png", "bmp", "webp"])
-combo_format.pack(pady=(2, 5))
+frame_img_format = ctk.CTkFrame(master=frame_main)
+frame_img_format.pack(anchor="center", fill="x", expand=True, pady=(5, 0))
+label_img_format_margin_L = ctk.CTkLabel(master=frame_img_format, text="", font=("system-ui", 0, "normal"))
+label_img_format_margin_L.pack(side="left", expand=True, padx=(0, 5))
+label_img_format = ctk.CTkLabel(master=frame_img_format, text="", font=("system-ui", 12, "normal"))
+label_img_format.pack(side="left", padx=(0, 5))
+combo_format = ctk.CTkComboBox(master=frame_img_format, font=("system-ui", 14, "normal"), values=["png", "bmp", "webp"])
+combo_format.pack(side="left", padx=(0, 5))
+label_img_format_margin_R = ctk.CTkLabel(master=frame_img_format, text="", font=("system-ui", 0, "normal"))
+label_img_format_margin_R.pack(side="left", expand=True, padx=(0, 5))
 if history_format_img:
     combo_format.set(history_format_img)
 frame_dir_img = ctk.CTkFrame(master=frame_main)
 frame_dir_img.pack(fill="x", expand=True, pady=(5, 10))
-button_dir_img_open = ctk.CTkButton(master=frame_dir_img, text="フォルダを選択", font=("system-ui", 14, "normal"), command=lambda:choose_dir_img())
+button_dir_img_open = ctk.CTkButton(master=frame_dir_img, text="", font=("system-ui", 14, "normal"), command=lambda:choose_dir_img())
 button_dir_img_open.pack(side="left", padx=(0, 5))
-textbox_dir_img_input = ctk.CTkEntry(master=frame_dir_img, font=("system-ui", 14, "normal"), placeholder_text="画像ファイルが入ったフォルダを選択")
+textbox_dir_img_input = ctk.CTkEntry(master=frame_dir_img, font=("system-ui", 14, "normal"), placeholder_text="")
 textbox_dir_img_input.pack(side="left", fill="x", expand=True)
 if history_dir_img:
     textbox_dir_img_input.insert(0, history_dir_img)
-label_path_pdf = ctk.CTkLabel(master=frame_main, text="PDFの保存先", font=("system-ui", 14, "bold"))
+label_path_pdf = ctk.CTkLabel(master=frame_main, text="", font=("system-ui", 14, "bold"))
 label_path_pdf.pack(pady=(5, 2))
 frame_path_pdf = ctk.CTkFrame(master=frame_main)
 frame_path_pdf.pack(fill="x", expand=True, pady=(5, 10))
-button_path_pdf_open = ctk.CTkButton(master=frame_path_pdf, text="ファイルを指定", font=("system-ui", 14, "normal"), command=lambda:choose_path_pdf())
+button_path_pdf_open = ctk.CTkButton(master=frame_path_pdf, text="", font=("system-ui", 14, "normal"), command=lambda:choose_path_pdf())
 button_path_pdf_open.pack(side="left", padx=(0, 5))
-textbox_path_pdf_input = ctk.CTkEntry(master=frame_path_pdf, font=("system-ui", 14, "normal"), placeholder_text="PDFファイルの保存先を指定")
+textbox_path_pdf_input = ctk.CTkEntry(master=frame_path_pdf, font=("system-ui", 14, "normal"), placeholder_text="")
 textbox_path_pdf_input.pack(side="left", fill="x", expand=True)
 if history_path_pdf:
     textbox_path_pdf_input.insert(0, history_path_pdf)
 separator2 = ctk.CTkFrame(master=frame_main, height=2, fg_color="gray")
 separator2.pack(fill="x", pady=(5, 10))
 # section3
-button_convert_img_pdf = ctk.CTkButton(master=frame_main, text="実行", font=("system-ui", 14, "bold"), command=lambda:run_image_pdf())
+button_convert_img_pdf = ctk.CTkButton(master=frame_main, text="", font=("system-ui", 14, "bold"), command=lambda:run_image_pdf())
 button_convert_img_pdf.pack(pady=(5, 0))
 label_convert_status = ctk.CTkLabel(master=frame_main, text="", font=("system-ui", 12, "normal"))
 label_convert_status.pack(pady=(2, 0))
@@ -183,11 +228,13 @@ progressbar = ctk.CTkProgressBar(master=frame_main, width=200, height=8)
 progressbar.pack(padx=(15, 15), pady=(2, 7), fill="x", expand=True)
 progressbar.set(0)
 
-if (__name__ == "__main__"):
-    # ウィンドウが消されたときの処理
-    app.protocol("WM_DELETE_WINDOW", quit_thisAPP)
-    # ショートカットキー
-    app.bind("<Control-w>", quit_thisAPP)
-    app.bind("<Control-q>", quit_thisAPP)
+# load translation file
+open_language_file(lang=language)
+
+# ウィンドウが消されたときの処理
+app.protocol("WM_DELETE_WINDOW", quit_thisAPP)
+# ショートカットキー
+app.bind("<Control-w>", quit_thisAPP)
+app.bind("<Control-q>", quit_thisAPP)
 
 app.mainloop()
