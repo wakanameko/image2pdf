@@ -1,0 +1,14 @@
+Open Images Folder
+Format of images：
+Choose Folder
+Choose the folder contains the image files.
+Save PDF to
+Choose File
+Determine where you want to save the pdf.
+convert
+[info] : converting... {} files / {} files
+[success] : Executed all process.
+[error] : No images found.
+[error] : The destination of the PDF file is not specified.
+Choose the folder containing the images to be converted to PDF.
+Determine where you want to save the pdf.
