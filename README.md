@@ -1,6 +1,6 @@
 # image2pdf
 ## 概要
-Python3と[諸々のライブラリ](https://github.com/wakanameko/image2pdf/blob/main/requirements.txt)を用いて、画像ファイル群を1つのPDFファイルにします。  
+Python3.8.10と[諸々のライブラリ](https://github.com/wakanameko/image2pdf/blob/main/requirements.txt)を用いて、画像ファイル群を1つのPDFファイルにします。  
 
 ## 動作確認環境
 以下の環境にて動作確認済み。
