@@ -48,7 +48,7 @@ def writeSettingFile(mode="default"):
 def open_language_file(lang="Japanese"):
     try:
         with open("{}{}.txt".format(path_dir_translation, lang), "r", encoding="UTF-8") as file_language:
-            global info_files_converting, success_files_convert, error_image_not_found, error_file_dest_not_found, popup_title_choose_dir_img, popup_title_save_path_pdf
+            global info_files_converting, success_files_convert, error_image_not_found, error_file_dest_not_found, error_file_type_not_found, popup_title_choose_dir_img, popup_title_save_path_pdf
             translations = file_language.read().splitlines()
             print(translations)
 
@@ -69,9 +69,10 @@ def open_language_file(lang="Japanese"):
             # error messages
             error_image_not_found = translations[10]
             error_file_dest_not_found = translations[11]
+            error_file_type_not_found = translations[12]
             # popup window
-            popup_title_choose_dir_img = translations[12]
-            popup_title_save_path_pdf = translations[13]
+            popup_title_choose_dir_img = translations[13]
+            popup_title_save_path_pdf = translations[14]
     except FileNotFoundError:
         print("言語ファイル「{}{}.txt」が見つかりません。".format(path_dir_translation, lang))
         open_language_file()
@@ -116,9 +117,22 @@ def run_image_pdf():
         label_convert_status.configure(text=error_image_not_found, text_color="red")
         return
 
+    # 出力先が空の場合
     if not history_path_pdf:
         label_convert_status.configure(text=error_file_dest_not_found, text_color="red")
         return
+    
+    # 出力ファイルの拡張子が未指定の場合
+    tmp_pop_path_pdf = []
+    for i in range(-4, 0):
+        # nonlocal tmp_pop_path_pdf
+        tmp_pop_path_pdf.append(history_path_pdf[i])
+    tmp_pop_path_pdf_str = "".join(tmp_pop_path_pdf)
+    if tmp_pop_path_pdf_str != ".pdf":
+        label_convert_status.configure(text=error_file_type_not_found, text_color="red")
+        print(tmp_pop_path_pdf_str)
+        return
+            
     
     image_objs = []
     for j, i in enumerate(array_file_image):
@@ -140,7 +154,7 @@ def quit_thisAPP(event=None):
 ##########
 # initialize
 APPNAME = "image2pdf"
-VERSION = 1.3
+VERSION = 1.4
 DEVELOPER = "wakanameko"
 currentDir = os.path.dirname(__file__)
 env_OS = platform.system()

@@ -10,5 +10,6 @@ convert
 [success] : Executed all process.
 [error] : No images found.
 [error] : The destination of the PDF file is not specified.
+[error] : Set type of file will be export. (e.g: .pdf)
 Choose the folder containing the images to be converted to PDF.
 Determine where you want to save the pdf.
