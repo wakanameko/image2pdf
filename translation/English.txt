@@ -9,6 +9,7 @@ convert
 [info] : converting... {} files / {} files
 [success] : Executed all process.
 [error] : No images found.
+[error] : Choose a folder has images.
 [error] : The destination of the PDF file is not specified.
 [error] : Set type of file will be export. (e.g: .pdf)
 Choose the folder containing the images to be converted to PDF.
