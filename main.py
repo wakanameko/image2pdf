@@ -3,6 +3,7 @@ import os
 import platform
 import threading
 import customtkinter as ctk
+from tkinterdnd2 import TkinterDnD, DND_ALL
 import PIL
 
 ##########
@@ -48,7 +49,7 @@ def writeSettingFile(mode="default"):
 def open_language_file(lang="Japanese"):
     try:
         with open("{}{}.txt".format(path_dir_translation, lang), "r", encoding="UTF-8") as file_language:
-            global info_files_converting, success_files_convert, error_image_not_found, error_file_dest_not_found, error_file_type_not_found, popup_title_choose_dir_img, popup_title_save_path_pdf
+            global info_files_converting, success_files_convert, error_image_not_found, error_not_a_dir, error_file_dest_not_found, error_file_type_not_found, popup_title_choose_dir_img, popup_title_save_path_pdf
             translations = file_language.read().splitlines()
             print(translations)
 
@@ -68,11 +69,12 @@ def open_language_file(lang="Japanese"):
             success_files_convert = translations[9]
             # error messages
             error_image_not_found = translations[10]
-            error_file_dest_not_found = translations[11]
-            error_file_type_not_found = translations[12]
+            error_not_a_dir = translations[11]
+            error_file_dest_not_found = translations[12]
+            error_file_type_not_found = translations[13]
             # popup window
-            popup_title_choose_dir_img = translations[13]
-            popup_title_save_path_pdf = translations[14]
+            popup_title_choose_dir_img = translations[14]
+            popup_title_save_path_pdf = translations[15]
     except FileNotFoundError:
         print("言語ファイル「{}{}.txt」が見つかりません。".format(path_dir_translation, lang))
         open_language_file()
@@ -106,6 +108,22 @@ def choose_path_pdf():
         textbox_path_pdf_input.insert(0, save_path_pdf)
         writeSettingFile(mode="save")
 
+def choose_with_dnd(event):
+    global history_dir_img, history_path_pdf
+    # サンプルコードの受け売り
+    dropped_file = event.data.replace("{","").replace("}", "")
+    # 何かしらを受け取ったらテキストボックスを更新
+    if dropped_file:
+        if event.widget == frame_dir_img:
+            textbox_dir_img_input.delete(0, ctk.END)
+            textbox_dir_img_input.insert(0, dropped_file)
+            writeSettingFile(mode="save")
+        elif event.widget == frame_path_pdf:
+            textbox_path_pdf_input.delete(0, ctk.END)
+            textbox_path_pdf_input.insert(0, dropped_file)
+            writeSettingFile(mode="save")
+
+
 def run_image_pdf():
     writeSettingFile(mode="save")
     try:
@@ -115,6 +133,9 @@ def run_image_pdf():
             raise FileNotFoundError
     except FileNotFoundError:
         label_convert_status.configure(text=error_image_not_found, text_color="red")
+        return
+    except NotADirectoryError:
+        label_convert_status.configure(text=error_not_a_dir, text_color="red")
         return
 
     # 出力先が空の場合
@@ -132,7 +153,6 @@ def run_image_pdf():
         label_convert_status.configure(text=error_file_type_not_found, text_color="red")
         print(tmp_pop_path_pdf_str)
         return
-            
     
     image_objs = []
     for j, i in enumerate(array_file_image):
@@ -146,6 +166,7 @@ def run_image_pdf():
 
     label_convert_status.configure(text=success_files_convert, text_color="green")
 
+
 def quit_thisAPP(event=None):
     writeSettingFile(mode="save")
     app.destroy()
@@ -154,9 +175,10 @@ def quit_thisAPP(event=None):
 ##########
 # initialize
 APPNAME = "image2pdf"
-VERSION = 1.4
+VERSION = 1.5
 DEVELOPER = "wakanameko"
 currentDir = os.path.dirname(__file__)
+print("{}/setting.ini".format(currentDir))
 env_OS = platform.system()
 if env_OS == "Darwin":
     path_setting_ini = "{}/setting.ini".format(currentDir)
@@ -176,6 +198,15 @@ except UnicodeDecodeError:
 
 ##########
 # initialize main window
+# クラス定義
+class CTk(ctk.CTk, TkinterDnD.DnDWrapper):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.TkdndVersion = TkinterDnD._require(self)
+class DnDFrame(ctk.CTkFrame, TkinterDnD.DnDWrapper):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.TkdndVersion = TkinterDnD._require(self)
 ctk.set_appearance_mode(appearance)  # options: "Light", "Dark", "System"
 ctk.set_default_color_theme(theme)  # options: "blue", "green", "dark-blue"
 app = ctk.CTk()
@@ -191,6 +222,7 @@ ctk.CTkFont._default_font = ctk.CTkFont("system-ui")
 frame_main = ctk.CTkScrollableFrame(app)
 frame_main.pack(fill="both", expand=True, padx=10, pady=10)
 
+
 ##########
 # Place Widgets
 # section1
@@ -201,7 +233,7 @@ separator1.pack(fill="x", pady=(5, 10))
 # section2
 label_dir_img = ctk.CTkLabel(master=frame_main, text="", font=("system-ui", 14, "bold"))
 label_dir_img.pack(pady=(5, 0))
-frame_img_format = ctk.CTkFrame(master=frame_main)
+frame_img_format = ctk.CTkFrame(master=frame_main) # D&Dするために、継承クラスを使用してフレーム作成
 frame_img_format.pack(anchor="center", fill="x", expand=True, pady=(5, 0))
 label_img_format_margin_L = ctk.CTkLabel(master=frame_img_format, text="", font=("system-ui", 0, "normal"))
 label_img_format_margin_L.pack(side="left", expand=True, padx=(0, 5))
@@ -213,7 +245,8 @@ label_img_format_margin_R = ctk.CTkLabel(master=frame_img_format, text="", font=
 label_img_format_margin_R.pack(side="left", expand=True, padx=(0, 5))
 if history_format_img:
     combo_format.set(history_format_img)
-frame_dir_img = ctk.CTkFrame(master=frame_main)
+
+frame_dir_img = DnDFrame(master=frame_main)
 frame_dir_img.pack(fill="x", expand=True, pady=(5, 10))
 button_dir_img_open = ctk.CTkButton(master=frame_dir_img, text="", font=("system-ui", 14, "normal"), command=lambda:choose_dir_img())
 button_dir_img_open.pack(side="left", padx=(0, 5))
@@ -221,9 +254,12 @@ textbox_dir_img_input = ctk.CTkEntry(master=frame_dir_img, font=("system-ui", 14
 textbox_dir_img_input.pack(side="left", fill="x", expand=True)
 if history_dir_img:
     textbox_dir_img_input.insert(0, history_dir_img)
+frame_dir_img.drop_target_register(DND_ALL)
+frame_dir_img.dnd_bind("<<Drop>>", choose_with_dnd)
+
 label_path_pdf = ctk.CTkLabel(master=frame_main, text="", font=("system-ui", 14, "bold"))
 label_path_pdf.pack(pady=(5, 2))
-frame_path_pdf = ctk.CTkFrame(master=frame_main)
+frame_path_pdf = DnDFrame(master=frame_main)
 frame_path_pdf.pack(fill="x", expand=True, pady=(5, 10))
 button_path_pdf_open = ctk.CTkButton(master=frame_path_pdf, text="", font=("system-ui", 14, "normal"), command=lambda:choose_path_pdf())
 button_path_pdf_open.pack(side="left", padx=(0, 5))
@@ -231,6 +267,8 @@ textbox_path_pdf_input = ctk.CTkEntry(master=frame_path_pdf, font=("system-ui", 
 textbox_path_pdf_input.pack(side="left", fill="x", expand=True)
 if history_path_pdf:
     textbox_path_pdf_input.insert(0, history_path_pdf)
+frame_path_pdf.drop_target_register(DND_ALL)
+frame_path_pdf.dnd_bind("<<Drop>>", choose_with_dnd)
 separator2 = ctk.CTkFrame(master=frame_main, height=2, fg_color="gray")
 separator2.pack(fill="x", pady=(5, 10))
 # section3
@@ -241,6 +279,8 @@ label_convert_status.pack(pady=(2, 0))
 progressbar = ctk.CTkProgressBar(master=frame_main, width=200, height=8)
 progressbar.pack(padx=(15, 15), pady=(2, 7), fill="x", expand=True)
 progressbar.set(0)
+
+
 
 # load translation file
 open_language_file(lang=language)
