@@ -1,7 +1,7 @@
 # coding: utf-8
 import os
 import platform
-import threading
+import shutil
 import customtkinter as ctk
 from tkinterdnd2 import TkinterDnD, DND_ALL
 import PIL
@@ -125,6 +125,7 @@ def choose_with_dnd(event):
 
 
 def run_image_pdf():
+    global history_dir_img, history_path_pdf
     writeSettingFile(mode="save")
     try:
         array_file_all = os.listdir(history_dir_img)    # 昇順になるしDSstoreも出てくる
@@ -135,6 +136,19 @@ def run_image_pdf():
         label_convert_status.configure(text=error_image_not_found, text_color="red")
         return
     except NotADirectoryError:
+        # 画像フォルダがzipファイルの場合
+        tmp_pop_dir_img = []
+        for i in range(-4, 0):
+            tmp_pop_dir_img.append(history_dir_img[i])
+        tmp_pop_dir_img_str = "".join(tmp_pop_dir_img)
+        if tmp_pop_dir_img_str == ".zip":
+            tmp_unzip_dir_img = os.path.dirname(history_dir_img)
+            shutil.unpack_archive(history_dir_img, history_dir_img[:-4])
+            history_dir_img = history_dir_img[:-4]  # 末尾の4文字（.zip）を取り除く
+            textbox_dir_img_input.delete(0, ctk.END)
+            textbox_dir_img_input.insert(0, history_dir_img)
+            return run_image_pdf()
+        
         label_convert_status.configure(text=error_not_a_dir, text_color="red")
         return
 
@@ -153,7 +167,8 @@ def run_image_pdf():
         label_convert_status.configure(text=error_file_type_not_found, text_color="red")
         print(tmp_pop_path_pdf_str)
         return
-    
+
+    # 変換
     image_objs = []
     for j, i in enumerate(array_file_image):
         path_images = os.path.join(history_dir_img, i)
@@ -175,7 +190,7 @@ def quit_thisAPP(event=None):
 ##########
 # initialize
 APPNAME = "image2pdf"
-VERSION = 1.5
+VERSION = 1.6
 DEVELOPER = "wakanameko"
 currentDir = os.path.dirname(__file__)
 print("{}/setting.ini".format(currentDir))
