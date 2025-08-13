@@ -1,54 +1,71 @@
 #!/bin/bash
 
-set -e
+# 入力
+read -p "バージョンを入力: " VERSION
+VERSION_INT=$(echo "$VERSION * 10" | bc | cut -d. -f1)
 
-# 定義
-PYTHON_BIN="/usr/local/bin/python3.8"
-VENV_DIR="./venv"
-read -p "main.pyが格納されているフォルダ名を入力してください: " TARGET_FOLDER
-if [ ! -d "$TARGET_FOLDER" ]; then
-    echo "エラー: フォルダ '$TARGET_FOLDER' が存在しません。"
-    exit 1
+# define App Name
+APP_NAME=image2pdf
+
+# path
+ROOT_PATH="/Users/haruno/Documents/My Softwares/$APP_NAME"
+PYTHON_PATH="/Library/Frameworks/Python.framework/Versions/3.8/bin/python3"
+SCRIPT_PATH="$ROOT_PATH/$VERSION/main.py"
+TRANSLATION_PATH="$ROOT_PATH/$VERSION/translation"
+APP_PATH_OLD="$ROOT_PATH/dist/$APP_NAME v$VERSION.app"
+
+# option
+if [ $VERSION_INT -ge 15 ]; then
+    PYINSTALLER_OPTS="--noconfirm --onedir --windowed \
+    --add-data \"env/lib/python3.8/site-packages/customtkinter:customtkinter/\" \
+    --add-data \"env/lib/python3.8/site-packages/tkinterdnd2:tkinterdnd2/\" \
+    --add-data \"$TRANSLATION_PATH:translation/\" \
+    --name \"$APP_NAME v$VERSION\" "
+else
+    PYINSTALLER_OPTS="--noconfirm --onedir --windowed \
+    --add-data \"env/lib/python3.8/site-packages/customtkinter:customtkinter/\" \
+    --add-data \"$TRANSLATION_PATH:translation/\" \
+    --name \"$APP_NAME v$VERSION\" "
 fi
-TARGET_SCRIPT="$TARGET_FOLDER/main.py"
-if [ ! -f "$TARGET_SCRIPT" ]; then
-    echo "エラー: $TARGET_SCRIPT が存在しません。"
-    deactivate
-    exit 1
+
+#------------------------------------------------------------------------------------#
+
+# make venv
+$PYTHON_PATH -m venv env
+source env/bin/activate
+
+# install requirements
+env/bin/python3 -m pip install pyinstaller
+env/bin/python3 -m pip install --upgrade pip
+env/bin/python3 -m pip install customtkinter
+env/bin/python3 -m pip install pillow
+if [ $VERSION_INT -ge 15 ]; then
+    env/bin/python3 -m pip install tkinterdnd2
 fi
 
-# 仮想環境(カレントに作成)
-# 既存の仮想環境があれば削除
-if [ -d "$VENV_DIR" ]; then
-    echo "既存の仮想環境を削除中..."
-    rm -rf "$VENV_DIR"
-fi
-echo "Creating virtual environment in $VENV_DIR..."
-$PYTHON_BIN -m venv "$VENV_DIR"
+# do PyInstaller
+eval "env/bin/python3 -m PyInstaller $PYINSTALLER_OPTS \"$SCRIPT_PATH\""
 
-source "$VENV_DIR/bin/activate"
-
-# pipとモジュールのインストール・更新
-echo "Upgrading pip..."
-pip install --upgrade pip
-echo "Installing required modules..."
-pip install customtkinter
-pip install tkinterdnd2
-pip install pillow
-pip install pyinstaller
-
-# PyInstaller を使ってビルド
-# 既存の関連ファイルがあれば消す
-if [ -d "./build" ]; then
-    echo "既存のビルドファイルを削除中..."
-    rm -rf "./build"
-    rm -rf "./dist"
-    rm -rf "./main.spec"
-fi
-echo "PyInstallerを実行中..."
-pyinstaller --clean --noconfirm --onedir --windowed --name "image2pdf" --add-data="${TARGET_FOLDER}/translation:translation" --add-data="/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages/customtkinter:customtkinter/" "$TARGET_SCRIPT"
-
-# 仮想環境をディアクティベート
+# goodbye venv
 deactivate
 
-echo "ビルド完了。dist/ ディレクトリに実行ファイルが生成されました。"
+# copy to root from dist
+cp -R "$APP_PATH_OLD" "$ROOT_PATH"
+
+#------------------------------------------------------------------------------------#
+
+# configure of signature
+codesign --remove-signature "image2pdf v$VERSION.app"
+
+#------------------------------------------------------------------------------------#
+
+# zipping
+ditto -c -k --sequesterRsrc --keepParent "${ROOT_PATH}/image2pdf v${VERSION}.app" "${ROOT_PATH}/Mac.x64.Intel.zip"
+
+#------------------------------------------------------------------------------------#
+
+# cleanup
+rm -r "$ROOT_PATH/build"
+rm -r "$ROOT_PATH/dist"
+rm -r "$ROOT_PATH/image2pdf v$VERSION.spec"
+rm -r "$ROOT_PATH/env"
