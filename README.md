@@ -6,9 +6,10 @@ Python3.8.10と[諸々のライブラリ](https://github.com/wakanameko/image2pd
 以下の環境にて動作確認済み。
 |Windows       |MacOS (OSX)        |Linux|
 |:------------:|:-----------------:|:---:|
-|Windows11     |MacOS Catalina     |     |
-|Windows10     |MacOS High Sierra  |     |　　
-|Windows7      |  |     |　　
+|Windows11     |MacOS Ventura      |     |
+|Windows10     |MacOS Catalina     |     |　　
+|Windows7      |MacOS High Sierra  |     |　　
+|              |MacOS Sierra       |     |  
 
 100枚程度のpng画像からの変換を動作確認として行いました。  
 Macについては、iMac 21.5 late 2009とMacBook Air 2011にて動作確認しています。Appleシリコンチップを搭載したMacPCでは動作確認しておりません。  
